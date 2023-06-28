@@ -115,6 +115,69 @@ for ops in optiuni:
                     result += char
                 span_text = result
                 st.write(span_text)
+
+                element = soup.find_all("div", class_="sc-bqWxrE dcUFbK")
+                info = [div.text for div in element]
+                title_text = "<h1 style='color: yellow; font-size: 36px;'>{}</h1>".format(info[0])
+                st.markdown(title_text, unsafe_allow_html=True)
+
+                element = soup.find_all("div", class_="sc-bqWxrE jgPEwK")
+                info = [div.text for div in element]
+                element = soup.find_all("span", class_="sc-bqWxrE CQaWk")
+                info2 = [div.text for div in element]
+
+                left_column, middle_column, right_column = st.columns(3)
+                total_juc=0
+                with left_column:
+                    st.markdown(f'<span style="color: orange; font-weight: bold;">{info[0]}</span>', unsafe_allow_html=True)
+                    st.subheader(info2[0])
+                    total_juc=info2[0]
+                    st.markdown(f'<span style="color: orange; font-weight: bold;">{info[1]}</span>', unsafe_allow_html=True)
+                    st.subheader(info2[1])
+                with middle_column:
+                    st.markdown(f'<span style="color: orange; font-weight: bold;">{info[2]}</span>',
+                                unsafe_allow_html=True)
+                    element=soup.find_all("span",class_="sc-bqWxrE bGmDyb")
+                    info2 = [div.text for div in element]
+                    st.subheader(info2[0])
+                    import matplotlib.pyplot as plt
+                    nr_juc= []
+                    labels= []
+                    labels.append("Forigner players")
+                    labels.append("National players")
+                    nr_juc.append(info2[0])
+                    nr_juc.append(int(total_juc)-int(info2[0]))
+                    colors = ['red', 'blue']
+                    fig, ax = plt.subplots()
+                    ax.pie(nr_juc, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+                    ax.set_title('Statistica')
+                    ax.axis('equal')
+                    st.pyplot(fig)
+                with right_column:
+                    st.markdown(f'<span style="color: orange; font-weight: bold;">{info[3]}</span>',
+                                unsafe_allow_html=True)
+                    element = soup.find_all("span", class_="sc-bqWxrE bGmDyb")
+                    info2 = [div.text for div in element]
+                    st.subheader(info2[1])
+                    import matplotlib.pyplot as plt
+
+                    nr_juc = []
+                    labels = []
+                    labels.append("Forigner players")
+                    labels.append("National players")
+                    nr_juc.append(info2[0])
+                    nr_juc.append(int(total_juc) - int(info2[1]))
+                    colors = ['red', 'yellow']
+                    fig, ax = plt.subplots()
+                    ax.pie(nr_juc, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
+                    ax.set_title('Statistica')
+                    ax.axis('equal')
+                    st.pyplot(fig)
+                element = soup.find_all("div", class_="sc-bqWxrE cBEeaj")
+                info = [div.text for div in element]
+
+                st.markdown(f'<span style="color: orange; font-weight: bold;">{info[14]}</span>',unsafe_allow_html=True)
+
             else:
                 cod = -1
                 for it in coduri:
@@ -284,7 +347,9 @@ for ops in optiuni:
 
                 st.markdown("""---""")
 
+                st.title("Current ranking")
                 st.table(styled_table)
+                st.markdown("""---""")
 
                 import matplotlib.pyplot as plt
 
@@ -299,11 +364,29 @@ for ops in optiuni:
                     int_spec.append(integer_value)
                 st.title("Number of spectators per match")
 
+                xG_double=list(map(float, xG))
+                xGA_double=list(map(float, xGA))
                 fig, ax = plt.subplots(figsize=(17, 7))
                 ax.bar(short_name_teams, int_spec)
                 ax.set_xlabel('Echipa')
                 ax.set_ylabel('Nr. Spectators')
                 st.pyplot(fig)
+                st.markdown("""---""")
+
+                fig, ax = plt.subplots(figsize=(28, 18))
+
+                ax.bar(teams, xG_double, width=0.4, label='xG')
+                ax.bar(teams, xGA_double, width=0.4, label='xGA', alpha=0.9)
+
+                ax.set_xlabel("Team Name")
+                ax.set_ylabel("Coefficient")
+                ax.set_title("Status")
+
+                ax.legend()
+                st.title("Winning chances")
+                st.pyplot(fig)
+                st.markdown('<hr style="background-color: yellow;">', unsafe_allow_html=True)
+                st.markdown("""---""")
 
 
 
