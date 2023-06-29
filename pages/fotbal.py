@@ -14,6 +14,16 @@ coduri=[]
 optiuni=['-']
 
 def atribuie():
+    #ligi
+    file_path = r'C:\Users\Teo G\Desktop\proiect2\nume_ligi'
+    file = open(file_path, 'r')
+    lines = file.readlines()
+    file.close()
+    for line in lines:
+        values = line.strip()
+        optiuni.append(values)
+
+    #echipe
     file_path = r'C:\Users\Teo G\Desktop\proiect2\coduri.txt'
     file = open(file_path, 'r')
     lines = file.readlines()
@@ -22,8 +32,8 @@ def atribuie():
         values = line.split()
         coduri.append((values[0], int(values[1])))
         optiuni.append(values[0])
-atribuie()
 
+atribuie()
 
 selected_option = st.selectbox("Alege o echipa/campionat", optiuni)
 
@@ -163,8 +173,8 @@ for ops in optiuni:
 
                     nr_juc = []
                     labels = []
-                    labels.append("Forigner players")
-                    labels.append("National players")
+                    labels.append("National team players")
+                    labels.append("")
                     nr_juc.append(info2[0])
                     nr_juc.append(int(total_juc) - int(info2[1]))
                     colors = ['red', 'yellow']
@@ -173,19 +183,8 @@ for ops in optiuni:
                     ax.set_title('Statistica')
                     ax.axis('equal')
                     st.pyplot(fig)
-                element = soup.find_all("div", class_="sc-bqWxrE cBEeaj")
-                info = [div.text for div in element]
-
-                st.markdown(f'<span style="color: orange; font-weight: bold;">{info[14]}</span>',unsafe_allow_html=True)
-
             else:
                 cod = -1
-                for it in coduri:
-                    nume_cautat = it[0]
-                    id_cautat = it[1]
-                    if nume_cautat == ops:
-                        cod = id_cautat
-                        break
                 new_string = ops[1:]
                 ops=new_string
                 sir = "Informatii esentiale despre " + ops
@@ -193,8 +192,17 @@ for ops in optiuni:
                 st.markdown(f'<span style="color: blue; font-weight: bold; font-size: {size}px">{sir}</span>',
                             unsafe_allow_html=True)
 
+                url = 'https://fbref.com/en/comps/'
+                response = requests.get(url)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    premier_league_link = soup.find('a', text=ops)
+                    if premier_league_link:
+                        league_url = premier_league_link['href']
+                        id =league_url.split('/')[3]
 
-                url = 'https://fbref.com/en/comps/{}/{}-Stats'.format(cod,ops)
+                cod=id
+                url = 'https://fbref.com/en/comps/{}/'.format(cod)
                 response = requests.get(url)
                 soup = BeautifulSoup(response.content, 'html.parser')
                 table = soup.find('table', {'id': 'results2022-2023{}1_overall'.format(cod)})
@@ -237,7 +245,7 @@ for ops in optiuni:
                     xGD90.append(columns[13].text.strip())
                     spectators.append(columns[14].text.strip())
                     top_goals.append(columns[15].text.strip())
-                    notes.append(columns[16].text.strip())
+                    notes.append(columns[17].text.strip())
 
                     logo_url = columns[0].find('img')['src']
                     team_logos.append(logo_url)
@@ -345,11 +353,27 @@ for ops in optiuni:
                     st.subheader(champion_info)
                     st.image(team_logos[0])
 
-                st.markdown("""---""")
+                st.markdown('<hr style="background-color: yellow;">', unsafe_allow_html=True)
+
+                left_column, middle_column, right_column = st.columns(3)
+                with left_column:
+                    st.markdown("<h3 style='color: green;'>European qualification:</h3>", unsafe_allow_html=True)
+                with middle_column:
+                    st.markdown("<h3 style='color: red;'>Relegated:</h3>", unsafe_allow_html=True)
+                for index, note in enumerate(notes):
+                    if note != '' and note !='Relegated':
+                        with left_column:
+                            st.subheader(teams[index]+": "+note)
+                    else:
+                        if note =='Relegated':
+                            with middle_column:
+                                st.subheader(teams[index])
+
+                st.markdown('<hr style="background-color: yellow;">', unsafe_allow_html=True)
 
                 st.title("Current ranking")
                 st.table(styled_table)
-                st.markdown("""---""")
+                st.markdown('<hr style="background-color: yellow;">', unsafe_allow_html=True)
 
                 import matplotlib.pyplot as plt
 
@@ -366,30 +390,137 @@ for ops in optiuni:
 
                 xG_double=list(map(float, xG))
                 xGA_double=list(map(float, xGA))
-                fig, ax = plt.subplots(figsize=(17, 7))
-                ax.bar(short_name_teams, int_spec)
-                ax.set_xlabel('Echipa')
-                ax.set_ylabel('Nr. Spectators')
-                st.pyplot(fig)
-                st.markdown("""---""")
 
-                fig, ax = plt.subplots(figsize=(28, 18))
+                import plotly.express as px
 
-                ax.bar(teams, xG_double, width=0.4, label='xG')
-                ax.bar(teams, xGA_double, width=0.4, label='xGA', alpha=0.9)
+                data = {'Echipa': teams, 'Nr. Spectators': int_spec}
+                df = pd.DataFrame(data)
+                fig = px.bar(df, x='Echipa', y='Nr. Spectators', orientation='v')
+                fig.update_layout(height=800, width=1000)
+                fig.update_layout(bargap=0.1)
+                st.write(fig)
 
-                ax.set_xlabel("Team Name")
-                ax.set_ylabel("Coefficient")
-                ax.set_title("Status")
 
-                ax.legend()
-                st.title("Winning chances")
-                st.pyplot(fig)
                 st.markdown('<hr style="background-color: yellow;">', unsafe_allow_html=True)
-                st.markdown("""---""")
+
+                st.title("Winning chances")
+                import plotly.express as px
+
+                data = {'Teams': teams, 'xG': xG_double, 'xGA': xGA_double}
+                df = pd.DataFrame(data)
+                fig = px.bar(df, x=['xG', 'xGA'], y='Teams', orientation='h', barmode='group')
+                fig.update_layout(height=800, width=1000)
+                fig.update_layout(bargap=0.4)
+                st.write(fig)
+
+                table = soup.find('table', {'id': 'stats_squads_standard_for'})
+                teams = []
+                posesie = []
+                asisturi = []
+                goluri_penaltiuri = []
+                penaltiuri_primite = []
+                cartonase_rosii = []
+                cartonase_galbene = []
+                rows = table.find_all('tr')
+                for row in rows[2:]:
+                    columns=row.find_all('th')
+                    teams.append(columns[0].text.strip())
+                for row in rows[2:]:
+                    columns = row.find_all('td')
+                    posesie.append(columns[2].text.strip())
+                    asisturi.append(columns[8].text.strip())
+                    goluri_penaltiuri.append(columns[11].text.strip())
+                    penaltiuri_primite.append(columns[12].text.strip())
+                    cartonase_galbene.append(columns[13].text.strip())
+                    cartonase_rosii.append(columns[14].text.strip())
 
 
+                st.markdown('<hr style="background-color: yellow;">', unsafe_allow_html=True)
+                st.title("Possesion percentage")
+                import plotly.express as px
+
+                data = {'Teams': teams, 'Possesion': posesie}
+                df = pd.DataFrame(data)
+                fig = px.bar(df, x='Possesion', y='Teams', orientation='h')
+                fig.update_layout(height=800, width=1000)
+                fig.update_layout(bargap=0.1)
+                st.write(fig)
 
 
+                st.markdown('<hr style="background-color: yellow;">', unsafe_allow_html=True)
+                st.title("Actions statistics: ")
+                left_column, right_column = st.columns(2)
 
+                with left_column:
+                    st.subheader("Possesion percentage")
+                    import plotly.express as px
+                    data = {'Teams': teams, 'Possesion': posesie}
+                    df = pd.DataFrame(data)
+                    fig = px.bar(df, x='Possesion', y='Teams', orientation='h')
+                    fig.update_layout(height=600, width=600)
+                    fig.update_layout(bargap=0.1)
+                    st.write(fig)
+                with right_column:
+                    st.subheader("Assists")
+                    import plotly.express as px
+
+                    data = {
+                        'Teams': teams,
+                        'Asisturi': asisturi,
+                    }
+                    df = pd.DataFrame(data)
+                    fig = px.bar(df, x='Asisturi', y='Teams', orientation='h', barmode='group')
+                    fig.update_layout(height=600, width=600)
+                    fig.update_layout(bargap=0.1)
+                    st.write(fig)
+                with left_column:
+                    st.subheader('Got penalties')
+                    import plotly.express as px
+                    data = {
+                        'Teams': teams,
+                        'Got penalties': penaltiuri_primite
+                    }
+                    df = pd.DataFrame(data)
+                    fig = px.bar(df, x='Got penalties', y='Teams', orientation='h', barmode='group')
+                    fig.update_layout(height=600, width=600)
+                    fig.update_layout(bargap=0.1)
+                    st.write(fig)
+                with right_column:
+                    st.subheader('Penalty goals')
+                    import plotly.express as px
+                    data = {
+                        'Teams': teams,
+                        'Penalty goals': goluri_penaltiuri
+                    }
+                    df = pd.DataFrame(data)
+                    fig = px.bar(df, x='Penalty goals', y='Teams', orientation='h', barmode='group')
+                    fig.update_layout(height=600, width=600)
+                    fig.update_layout(bargap=0.1)
+                    st.write(fig)
+                with left_column:
+                    st.subheader('Yellow cards')
+                    import plotly.express as px
+                    data = {
+                        'Teams': teams,
+                        'Yellow cards': cartonase_galbene,
+                    }
+                    df = pd.DataFrame(data)
+                    fig = px.bar(df, x='Yellow cards', y='Teams', orientation='h', barmode='group')
+                    fig.update_traces(marker_color='yellow')
+                    fig.update_layout(height=600, width=600)
+                    fig.update_layout(bargap=0.1)
+                    st.write(fig)
+                with right_column:
+                    st.subheader('Red cards')
+                    import plotly.express as px
+                    data = {
+                        'Teams': teams,
+                        'Red cards': cartonase_rosii
+                    }
+                    df = pd.DataFrame(data)
+                    fig = px.bar(df, x='Red cards', y='Teams', orientation='h',barmode='group')
+                    fig.update_traces(marker_color='red')
+                    fig.update_layout(height=600, width=600)
+                    fig.update_layout(bargap=0.1)
+                    st.write(fig)
 
