@@ -1,7 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import smtplib
 import re
+import os
+import smtplib
+from email.message import EmailMessage
 
 import streamlit as st
 
@@ -13,6 +17,22 @@ st.markdown("##")
 coduri=[]
 optiuni=['-']
 
+def send_email(text):
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.ehlo()
+    server.starttls()
+    server.ehlo()
+    server.login('tt2499047@gmail.com', 'keoqqywhkftdjxga')
+    subject = "Notificare noua fotbal"
+    body = 'New notification '
+    msg = f"Subject: {text}"
+    server.sendmail(
+        'tt2499047@gmail.com',
+        'tt2499047@gmail.com',
+        msg
+    )
+    print('EMAILUL A FOST TRIMIS')
+    server.quit()
 def atribuie():
     #ligi
     file_path = r'C:\Users\Teo G\Desktop\proiect2\nume_ligi'
@@ -21,6 +41,8 @@ def atribuie():
     file.close()
     for line in lines:
         values = line.strip()
+        modified_string = "_{}".format(values)
+        values=modified_string
         optiuni.append(values)
 
     #echipe
@@ -75,6 +97,7 @@ for ops in optiuni:
                 txt="Current championships "
                 st.markdown(f'<span style="color: yellow; font-weight: bold;">{txt}</span>', unsafe_allow_html=True)
                 st.write(league_names[0],', ', league_names[1])
+
                 txt = "Current standings in: "
                 st.markdown(f'<span style="color: yellow; font-weight: bold;">{txt}</span>', unsafe_allow_html=True)
                 st.write(league_names[1])
@@ -83,9 +106,27 @@ for ops in optiuni:
                 h2_elements = div_tags[0].find_all('h2')
                 p_elements=div_tags[0].find_all('p')
                 cnt=0
+                okk=0
                 for h2_element in h2_elements:
                     h2_text = h2_element.get_text()
                     p_text=p_elements[cnt+1].get_text()
+                    if okk==0:
+                        okk = 1
+                        f = r'C:\Users\Teo G\Desktop\proiect2\changes.txt'
+                        with open(f, 'r') as file:
+                            with open(f, "r") as file:
+                                text = file.read()
+                                if p_text in text:
+                                    print("Informatia este")
+                                else:
+                                    print("Nu este")
+                                    send_email(p_text)
+                                    file.close()
+                                    file = open(f, "a")
+                                    file.write(p_text + "\n")
+                                    file.close()
+
+                            file.close()
                     st.markdown(f'<span style="color: yellow; font-weight: bold;">{h2_text}</span>', unsafe_allow_html=True)
                     if cnt == 1:
                         p_text = p_elements[cnt + 3].get_text()
